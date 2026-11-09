@@ -12,8 +12,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-# Menggunakan .resolve() untuk memastikan absolute path terbaca dengan benar di server Linux
-BASE = Path(__file__).resolve().parent
+BASE = Path(__file__).parent
 MODEL_DIR = BASE / "model"
 SAMPLE_CSV = BASE / "data" / "sample_log.csv"
 
@@ -179,11 +178,19 @@ with tab_csv:
 
             st.subheader("Hasil per pengukuran")
             st.dataframe(out, width="stretch", height=360)
-            
-            # Memperbaiki fungsi tombol unduh yang terpotong sebelumnya
-            st.download_button(
-                label="⬇️ Unduh hasil (CSV)",
-                data=out.to_csv(index=False),
-                file_name="hasil_diagnosis_motor.csv",
-                mime="text/csv"
-            )
+            st.download_button("⬇️ Unduh hasil (CSV)", out.to_csv(index=False).encode(), "hasil_diagnosis.csv", "text/csv")
+
+# --- Tab 3: model ---
+with tab_info:
+    st.subheader("Perbandingan tiga model: deteksi Normal vs Fault")
+    st.dataframe(pd.DataFrame(meta["comparison_detection"]).set_index("Model"), width="stretch")
+    st.subheader("Perbandingan tiga model: diagnosis jenis gangguan")
+    st.dataframe(pd.DataFrame(meta["comparison_diagnosis"]).set_index("Model"), width="stretch")
+    st.subheader("Feature importance (Random Forest)")
+    imp = pd.DataFrame(meta["importance"])
+    imp.index = [LABEL[i] for i in imp.index]
+    st.bar_chart(imp, stack=False)
+    ts = meta["two_stage"]
+    st.caption(f"Sistem dua tingkat pada data uji: akurasi {ts['accuracy']:.1%}, F1 macro {ts['f1_macro']:.3f}. "
+               f"Dilatih dengan Python {meta['versions']['python']}, scikit-learn {meta['versions']['scikit-learn']}, "
+               f"numpy {meta['versions']['numpy']}.")
